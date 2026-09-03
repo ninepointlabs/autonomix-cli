@@ -36,8 +36,8 @@ changelog:
 nfpms:
   - file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     vendor: Autonomix
-    homepage: https://github.com/sgtapple/autonomix-cli
-    maintainer: sgtapple <sgtapple@example.com>
+    homepage: https://github.com/ninepointlabs/autonomix-cli
+    maintainer: ninepointlabs <tim@ninepointlabs.com>
     description: A CLI for managing packages from GitHub releases.
     license: MIT
     formats:
@@ -49,7 +49,7 @@ nfpms:
 
 release:
   github:
-    owner: sgtapple
+    owner: ninepointlabs
     name: autonomix-cli
   # If you want to replace existing releases
   # replace_existing_artifacts: true

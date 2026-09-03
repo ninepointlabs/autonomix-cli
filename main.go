@@ -5,12 +5,12 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tim/autonomix-cli/config"
-	"github.com/tim/autonomix-cli/pkg/manager"
-	"github.com/tim/autonomix-cli/tui"
+	"github.com/ninepointlabs/autonomix-cli/config"
+	"github.com/ninepointlabs/autonomix-cli/pkg/manager"
+	"github.com/ninepointlabs/autonomix-cli/tui"
 )
 
-const SelfRepoURL = "https://github.com/sgtapple/autonomix-cli"
+const SelfRepoURL = "https://github.com/ninepointlabs/autonomix-cli"
 
 var version = "dev" // Set by goreleaser
 
