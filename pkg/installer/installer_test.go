@@ -2,9 +2,9 @@ package installer
 
 import (
 	"testing"
-	"github.com/tim/autonomix-cli/pkg/github"
-	"github.com/tim/autonomix-cli/pkg/system"
-	"github.com/tim/autonomix-cli/pkg/packages"
+	"github.com/ninepointlabs/autonomix-cli/pkg/github"
+	"github.com/ninepointlabs/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
 )
 
 func TestGetCompatibleAssets_Universal(t *testing.T) {

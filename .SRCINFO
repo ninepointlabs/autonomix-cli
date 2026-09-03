@@ -2,12 +2,12 @@ pkgbase = autonomix-cli
 	pkgdesc = A CLI for managing Linux applications from GitHub releases
 	pkgver = 0.2.7
 	pkgrel = 1
-	url = https://github.com/timappledotcom/autonomix-cli
+	url = https://github.com/ninepointlabs/autonomix-cli
 	arch = x86_64
 	arch = aarch64
 	license = MIT
 	makedepends = go
-	source = autonomix-cli-0.2.7.tar.gz::https://github.com/timappledotcom/autonomix-cli/archive/v0.2.7.tar.gz
+	source = autonomix-cli-0.2.7.tar.gz::https://github.com/ninepointlabs/autonomix-cli/archive/v0.2.7.tar.gz
 	sha256sums = SKIP
 
 pkgname = autonomix-cli

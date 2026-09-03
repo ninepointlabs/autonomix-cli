@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tim/autonomix-cli/pkg/packages"
+	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
 )
 
 // CheckInstalled checks if an application is installed via various package managers.

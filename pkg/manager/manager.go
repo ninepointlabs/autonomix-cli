@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tim/autonomix-cli/config"
-	"github.com/tim/autonomix-cli/pkg/github"
-	"github.com/tim/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/config"
+	"github.com/ninepointlabs/autonomix-cli/pkg/github"
+	"github.com/ninepointlabs/autonomix-cli/pkg/system"
 )
 
 // AddResult contains the info about the added app

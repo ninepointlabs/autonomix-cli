@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/tim/autonomix-cli/pkg/github"
-	"github.com/tim/autonomix-cli/pkg/packages"
-	"github.com/tim/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/pkg/github"
+	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
+	"github.com/ninepointlabs/autonomix-cli/pkg/system"
 )
 
 // GetCompatibleAssets returns a list of assets that are compatible with the current system.

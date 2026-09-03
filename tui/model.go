@@ -14,12 +14,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tim/autonomix-cli/config"
-	"github.com/tim/autonomix-cli/pkg/github"
-	"github.com/tim/autonomix-cli/pkg/installer"
-	"github.com/tim/autonomix-cli/pkg/manager"
-	"github.com/tim/autonomix-cli/pkg/packages"
-	"github.com/tim/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/config"
+	"github.com/ninepointlabs/autonomix-cli/pkg/github"
+	"github.com/ninepointlabs/autonomix-cli/pkg/installer"
+	"github.com/ninepointlabs/autonomix-cli/pkg/manager"
+	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
+	"github.com/ninepointlabs/autonomix-cli/pkg/system"
 )
 
 func normalizeVersion(v string) string {
@@ -64,7 +64,7 @@ const (
 )
 
 // Define self repo URL matching main.go to identify it
-const SelfRepoURL = "https://github.com/sgtapple/autonomix-cli"
+const SelfRepoURL = "https://github.com/ninepointlabs/autonomix-cli"
 
 type item struct {
 	app config.App

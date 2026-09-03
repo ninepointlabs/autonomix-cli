@@ -14,7 +14,7 @@ Autonomix CLI is a terminal-based utility written in Go that allows you to easil
 
 ### From GitHub Releases
 
-Go to the [Releases](https://github.com/tim/autonomix-cli/releases) page and download the package for your system.
+Go to the [Releases](https://github.com/ninepointlabs/autonomix-cli/releases) page and download the package for your system.
 
 **Debian/Ubuntu:**
 ```bash
