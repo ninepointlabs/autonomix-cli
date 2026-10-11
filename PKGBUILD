@@ -14,8 +14,8 @@ sha256sums=('SKIP')
 build() {
   cd "$pkgname-$pkgver"
   export CGO_ENABLED=0
-  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
-  go build -o "$pkgname" .
+  export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+  go build -ldflags "-X main.version=$pkgver" -o "$pkgname" .
 }
 
 package() {
