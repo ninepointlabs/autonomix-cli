@@ -1,6 +1,6 @@
 # Maintainer: Tim <tim@example.com>
 pkgname=autonomix-cli
-pkgver=0.2.7
+pkgver=0.3.2
 pkgrel=1
 pkgdesc="A CLI for managing Linux applications from GitHub releases"
 arch=('x86_64' 'aarch64')
