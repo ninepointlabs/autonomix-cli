@@ -20,32 +20,8 @@ import (
 	"github.com/ninepointlabs/autonomix-cli/pkg/manager"
 	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
 	"github.com/ninepointlabs/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/pkg/updater"
 )
-
-func normalizeVersion(v string) string {
-	v = strings.TrimSpace(v)
-	// Remove "v" prefix
-	v = strings.TrimPrefix(v, "v")
-	// Remove Debian/RPM package revision suffix (e.g., "0.1.1-1" -> "0.1.1")
-	if idx := strings.LastIndex(v, "-"); idx > 0 {
-		// Only strip if what follows the dash looks like a package revision (number)
-		suffix := v[idx+1:]
-		// Check if suffix is purely numeric (Debian revision) or contains "el" (RPM dist tag)
-		if len(suffix) > 0 && (isNumeric(suffix) || strings.Contains(suffix, "el")) {
-			v = v[:idx]
-		}
-	}
-	return v
-}
-
-func isNumeric(s string) bool {
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return false
-		}
-	}
-	return len(s) > 0
-}
 
 var (
 	docStyle         = lipgloss.NewStyle().Margin(1, 2)
@@ -79,8 +55,8 @@ func (i item) Description() string {
 		status = "Installed: " + i.app.Version
 		style = installedStyle
 		
-		vInstalled := normalizeVersion(i.app.Version)
-		vLatest := normalizeVersion(i.app.Latest)
+		vInstalled := updater.NormalizeVersion(i.app.Version)
+		vLatest := updater.NormalizeVersion(i.app.Latest)
 		
 		if vLatest != "" && vLatest != vInstalled {
 			status = fmt.Sprintf("Update Available: %s -> %s", i.app.Version, i.app.Latest)
@@ -233,8 +209,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					selectedItem := m.list.Items()[index].(item)
 					
 					// Check if update available or not installed
-					vInstalled := normalizeVersion(selectedItem.app.Version)
-					vLatest := normalizeVersion(selectedItem.app.Latest)
+					vInstalled := updater.NormalizeVersion(selectedItem.app.Version)
+					vLatest := updater.NormalizeVersion(selectedItem.app.Latest)
 					
 					// Install if not installed OR update available
 					// Note: vLatest check ensures we actually found a release on GitHub

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -22,6 +23,14 @@ type Release struct {
 	HTMLURL string  `json:"html_url"`
 }
 
+// Token returns the GitHub token from GITHUB_TOKEN or GH_TOKEN, if set.
+func Token() string {
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		return token
+	}
+	return os.Getenv("GH_TOKEN")
+}
+
 // GetLatestRelease fetches the latest release info for a github repo url
 // url format: https://github.com/owner/repo
 func GetLatestRelease(repoURL string) (*Release, error) {
@@ -37,7 +46,16 @@ func GetLatestRelease(repoURL string) (*Release, error) {
 		Timeout: 10 * time.Second,
 	}
 
-	resp, err := client.Get(apiURL)
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	// Authenticated requests get 5000/hour instead of 60/hour
+	if token := Token(); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

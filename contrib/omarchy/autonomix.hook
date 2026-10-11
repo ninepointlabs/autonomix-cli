@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Update apps installed with Autonomix after an Omarchy system update.
+# Install: copy to ~/.config/omarchy/hooks/post-update.d/autonomix.hook
+
+command -v autonomix-cli >/dev/null || exit 0
+
+# Versions before the update command open the TUI on unknown arguments, but
+# fail on --version, which is how they are told apart.
+autonomix-cli --version &>/dev/null </dev/null || exit 0
+
+echo -e "\e[32m\nUpdate Autonomix apps\e[0m"
+autonomix-cli update -y

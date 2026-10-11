@@ -39,6 +39,27 @@ Run the application:
 autonomix-cli
 ```
 
+### Commands
+
+```bash
+autonomix-cli add <url>     # Track a GitHub repository
+autonomix-cli check         # List tracked apps with available updates
+autonomix-cli update [-y]   # Install available updates (-y: don't ask)
+autonomix-cli --version
+```
+
+`update` only touches apps installed through the system package manager (dpkg, rpm, pacman). Apps found only as a binary on `PATH`, or via Flatpak/Snap, are reported and skipped.
+
+Set `GITHUB_TOKEN` (or `GH_TOKEN`) to raise the GitHub API rate limit from 60 to 5000 requests per hour.
+
+### Omarchy
+
+To update Autonomix apps whenever you run `omarchy update`, install the post-update hook:
+
+```bash
+install -m755 contrib/omarchy/autonomix.hook ~/.config/omarchy/hooks/post-update.d/autonomix.hook
+```
+
 ### Controls
 
 - **Start Typing**: To add a new GitHub repository URL.

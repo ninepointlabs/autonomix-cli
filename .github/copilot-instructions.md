@@ -44,7 +44,7 @@ Uses GoReleaser - see `.goreleaser.yaml` for configuration. Builds for Linux (am
 ### Key Data Flow
 - User adds repo → `manager.AddApp()` → GitHub API → detect system version → save to config → refresh TUI
 - User presses 'u' on item → fetch latest release → compare versions → prompt to install if update available
-- Version comparison uses `normalizeVersion()` to strip "v" prefixes and package revision suffixes (e.g., "-1")
+- Version comparison uses `updater.NormalizeVersion()` to strip "v" prefixes and package revision suffixes (e.g., "-1")
 
 ## Conventions
 
@@ -52,7 +52,7 @@ Uses GoReleaser - see `.goreleaser.yaml` for configuration. Builds for Linux (am
 
 **URL normalization**: GitHub URLs are cleaned to base repo format (`https://github.com/owner/repo`) - strips `/releases`, trailing slashes, etc.
 
-**Version normalization**: The `normalizeVersion()` function removes:
+**Version normalization**: The `updater.NormalizeVersion()` function removes:
 - "v" prefix (v1.0.0 → 1.0.0)
 - Debian revision suffix (1.0.0-1 → 1.0.0)
 - RPM dist tags (1.0.0-1.el9 → 1.0.0)
