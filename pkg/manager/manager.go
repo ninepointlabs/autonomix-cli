@@ -48,7 +48,7 @@ func AddApp(cfg *config.Config, repoURL string) (*AddResult, error) {
 		repoName = parts[len(parts)-1]
 	}
 
-	appName := rel.Name
+	appName := config.StripVersion(rel.Name)
 	if appName == "" || strings.HasPrefix(appName, "v") || strings.Contains(strings.ToLower(appName), "release") {
 		appName = repoName
 	}
