@@ -15,6 +15,10 @@ import (
 	"github.com/ninepointlabs/autonomix-cli/pkg/system"
 )
 
+// Log receives progress output from downloads and installs. Commands that
+// print machine-readable output on stdout point it at stderr.
+var Log io.Writer = os.Stdout
+
 // GetCompatibleAssets returns a list of assets that are compatible with the current system.
 func GetCompatibleAssets(release *github.Release) ([]github.Asset, error) {
 	sysType := system.GetSystemPreferredType()
@@ -135,7 +139,7 @@ func DownloadAsset(asset *github.Asset) (string, error) {
 	fileName := asset.Name
 	downloadPath := filepath.Join(tempDir, fileName)
 
-	fmt.Printf("Downloading %s...\n", asset.BrowserDownloadURL)
+	fmt.Fprintf(Log, "Downloading %s...\n", asset.BrowserDownloadURL)
 	if err := downloadFile(downloadPath, asset.BrowserDownloadURL); err != nil {
 		return "", fmt.Errorf("failed to download: %w", err)
 	}
@@ -157,21 +161,37 @@ func DownloadUpdate(release *github.Release) (string, error) {
 	return DownloadAsset(&assets[0])
 }
 
+// Escalator returns the command used to run the installer as root: sudo when
+// stdin is a terminal that can answer a password prompt, otherwise pkexec
+// (if installed) so a graphical frontend gets a polkit dialog instead.
+func Escalator() string {
+	if fi, err := os.Stdin.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
+		return "sudo"
+	}
+	if _, err := exec.LookPath("pkexec"); err == nil {
+		return "pkexec"
+	}
+	return "sudo"
+}
+
 // GetInstallCmd returns the exec.Cmd to install the package.
 // It does NOT set Stdin/Stdout/Stderr, the caller should do that or use tea.Exec
 func GetInstallCmd(path string) (*exec.Cmd, error) {
 	sysType := system.GetSystemPreferredType()
-	
+	// pkexec runs commands with a minimal environment, so pass an absolute path.
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	root := Escalator()
+
 	switch sysType {
 	case packages.Deb:
-		// sudo apt-get install -y ./path
-		// Using relative path for apt sometimes requires ./
-		absPath, _ := filepath.Abs(path)
-		return exec.Command("sudo", "apt-get", "install", "-y", absPath), nil
+		return exec.Command(root, "apt-get", "install", "-y", absPath), nil
 	case packages.Rpm:
-		return exec.Command("sudo", "rpm", "-Uvh", path), nil
+		return exec.Command(root, "rpm", "-Uvh", absPath), nil
 	case packages.Pacman:
-		return exec.Command("sudo", "pacman", "-U", "--noconfirm", path), nil
+		return exec.Command(root, "pacman", "-U", "--noconfirm", absPath), nil
 	default:
 		return nil, fmt.Errorf("unsupported install type: %s", sysType)
 	}
@@ -191,10 +211,10 @@ func InstallUpdate(release *github.Release) error {
 
 	// Connect to stdout/stderr so user sees password prompt and output
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = Log
 	cmd.Stderr = os.Stderr
 
-	fmt.Printf("Installing %s...\n", path)
+	fmt.Fprintf(Log, "Installing %s...\n", path)
 	return cmd.Run()
 }
 

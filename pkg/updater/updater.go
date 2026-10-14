@@ -22,7 +22,31 @@ const (
 	// release package could install a second copy.
 	Unmanaged
 	Failed
+	// Unchecked means the app is installed but no release has been fetched
+	// for it yet, so whether it is current is unknown.
+	Unchecked
 )
+
+var statusNames = map[Status]string{
+	UpToDate:        "up_to_date",
+	UpdateAvailable: "update_available",
+	NotInstalled:    "not_installed",
+	Unmanaged:       "unmanaged",
+	Failed:          "failed",
+	Unchecked:       "unchecked",
+}
+
+func (s Status) String() string {
+	if name, ok := statusNames[s]; ok {
+		return name
+	}
+	return "unknown"
+}
+
+// MarshalText lets a Status appear in JSON output by name.
+func (s Status) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
 
 // Result is the outcome of checking a single tracked app.
 type Result struct {
@@ -86,14 +110,42 @@ func Evaluate(installed string, installedType packages.Type, found bool, sysType
 	return UpToDate
 }
 
-// Check fetches the latest release for every tracked app and records the
-// results in cfg. The caller is responsible for saving cfg.
-func Check(cfg *config.Config) []Result {
+// Local evaluates every tracked app against the latest release recorded in
+// cfg, without contacting GitHub.
+func Local(cfg *config.Config) []Result {
 	sysType := system.GetSystemPreferredType()
-	now := time.Now().Format(time.RFC3339)
 
 	results := make([]Result, 0, len(cfg.Apps))
 	for i, app := range cfg.Apps {
+		r := Result{Index: i, App: app}
+		ver, t, found := DetectInstalled(app)
+		r.Installed = ver
+		r.InstalledType = t
+		r.Status = Evaluate(ver, t, found, sysType, app.Latest)
+		if app.Latest == "" && r.Status == UpToDate {
+			r.Status = Unchecked
+		}
+		results = append(results, r)
+	}
+	return results
+}
+
+// Check fetches the latest release for the tracked apps at indexes, or for
+// every tracked app when none are given, and records the results in cfg.
+// The caller is responsible for saving cfg.
+func Check(cfg *config.Config, indexes ...int) []Result {
+	sysType := system.GetSystemPreferredType()
+	now := time.Now().Format(time.RFC3339)
+
+	if len(indexes) == 0 {
+		for i := range cfg.Apps {
+			indexes = append(indexes, i)
+		}
+	}
+
+	results := make([]Result, 0, len(indexes))
+	for _, i := range indexes {
+		app := cfg.Apps[i]
 		r := Result{Index: i, App: app}
 
 		rel, err := github.GetLatestRelease(app.RepoURL)
@@ -115,6 +167,7 @@ func Check(cfg *config.Config) []Result {
 		if r.Status != NotInstalled && r.Status != Unmanaged {
 			cfg.Apps[i].Version = ver
 		}
+		r.App = cfg.Apps[i]
 
 		results = append(results, r)
 	}
