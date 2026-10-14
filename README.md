@@ -31,6 +31,18 @@ sudo rpm -i autonomix-cli_*.rpm
 sudo pacman -U autonomix-cli_*.pkg.tar.zst
 ```
 
+### Keeping it updated with [autonomix-cli](https://github.com/ninepointlabs/autonomix-cli)
+
+Once installed, Autonomix CLI tracks itself, so `autonomix-cli update` picks up new releases. To add it explicitly:
+
+```bash
+autonomix-cli add https://github.com/ninepointlabs/autonomix-cli
+```
+
+### Omarchy bar widget
+
+[omarchy-autonomix](https://github.com/ninepointlabs/omarchy-autonomix) puts your tracked apps and their updates in the Omarchy bar, using the `--json` commands below.
+
 ## Usage
 
 Run the application:
