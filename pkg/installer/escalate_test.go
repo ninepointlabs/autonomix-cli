@@ -14,15 +14,25 @@ func TestEscalatorWithoutTerminal(t *testing.T) {
 	defer r.Close()
 	defer w.Close()
 
-	stdin := os.Stdin
-	os.Stdin = r
-	defer func() { os.Stdin = stdin }()
+	// A graphical frontend usually hands the CLI /dev/null, which is a
+	// character device but not a terminal.
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer devNull.Close()
 
 	want := "sudo"
 	if _, err := exec.LookPath("pkexec"); err == nil {
 		want = "pkexec"
 	}
-	if got := Escalator(); got != want {
-		t.Errorf("Escalator() with piped stdin = %q, want %q", got, want)
+
+	stdin := os.Stdin
+	defer func() { os.Stdin = stdin }()
+	for name, f := range map[string]*os.File{"pipe": r, "/dev/null": devNull} {
+		os.Stdin = f
+		if got := Escalator(); got != want {
+			t.Errorf("Escalator() with %s stdin = %q, want %q", name, got, want)
+		}
 	}
 }

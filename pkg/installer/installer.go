@@ -13,6 +13,7 @@ import (
 	"github.com/ninepointlabs/autonomix-cli/pkg/github"
 	"github.com/ninepointlabs/autonomix-cli/pkg/packages"
 	"github.com/ninepointlabs/autonomix-cli/pkg/system"
+	"golang.org/x/sys/unix"
 )
 
 // Log receives progress output from downloads and installs. Commands that
@@ -165,13 +166,20 @@ func DownloadUpdate(release *github.Release) (string, error) {
 // stdin is a terminal that can answer a password prompt, otherwise pkexec
 // (if installed) so a graphical frontend gets a polkit dialog instead.
 func Escalator() string {
-	if fi, err := os.Stdin.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
+	if isTerminal(os.Stdin) {
 		return "sudo"
 	}
 	if _, err := exec.LookPath("pkexec"); err == nil {
 		return "pkexec"
 	}
 	return "sudo"
+}
+
+// isTerminal reports whether f is a terminal. /dev/null is a character
+// device too, so the file mode alone can't tell them apart.
+func isTerminal(f *os.File) bool {
+	_, err := unix.IoctlGetTermios(int(f.Fd()), unix.TCGETS)
+	return err == nil
 }
 
 // GetInstallCmd returns the exec.Cmd to install the package.
