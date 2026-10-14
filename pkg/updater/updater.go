@@ -84,6 +84,82 @@ func isNumeric(s string) bool {
 	return len(s) > 0
 }
 
+// CompareVersions compares two normalized versions the way pacman's vercmp
+// does, returning -1, 0 or 1. Versions are split into runs of digits and
+// letters: digit runs compare numerically, letter runs alphabetically, and a
+// digit run is newer than a letter run. When one version is a prefix of the
+// other, a trailing letter run marks a pre-release (1.0rc1 < 1.0) and a
+// trailing digit run a later release (1.0 < 1.0.1).
+func CompareVersions(a, b string) int {
+	as, bs := versionSegments(a), versionSegments(b)
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		x, y := as[i], bs[i]
+		xNum, yNum := isNumeric(x), isNumeric(y)
+		switch {
+		case xNum && yNum:
+			x, y = strings.TrimLeft(x, "0"), strings.TrimLeft(y, "0")
+			if len(x) != len(y) {
+				return sign(len(x) - len(y))
+			}
+			if c := strings.Compare(x, y); c != 0 {
+				return c
+			}
+		case xNum:
+			return 1
+		case yNum:
+			return -1
+		default:
+			if c := strings.Compare(x, y); c != 0 {
+				return c
+			}
+		}
+	}
+	switch {
+	case len(as) > len(bs):
+		return trailing(as[len(bs)])
+	case len(bs) > len(as):
+		return -trailing(bs[len(as)])
+	}
+	return 0
+}
+
+// trailing is the result for the version that has the extra segment s.
+func trailing(s string) int {
+	if isNumeric(s) {
+		return 1
+	}
+	return -1
+}
+
+func sign(n int) int {
+	switch {
+	case n > 0:
+		return 1
+	case n < 0:
+		return -1
+	}
+	return 0
+}
+
+// versionSegments splits "1.10rc2" into ["1", "10", "rc", "2"].
+func versionSegments(v string) []string {
+	var segs []string
+	start := -1
+	isDigit := func(c byte) bool { return c >= '0' && c <= '9' }
+	isAlpha := func(c byte) bool { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') }
+	v = strings.ToLower(v)
+	for i := 0; i <= len(v); i++ {
+		if start >= 0 && (i == len(v) || isDigit(v[i]) != isDigit(v[start]) || !(isDigit(v[i]) || isAlpha(v[i]))) {
+			segs = append(segs, v[start:i])
+			start = -1
+		}
+		if i < len(v) && start < 0 && (isDigit(v[i]) || isAlpha(v[i])) {
+			start = i
+		}
+	}
+	return segs
+}
+
 // DetectInstalled looks the app up by its name, then by its repo name.
 func DetectInstalled(app config.App) (string, packages.Type, bool) {
 	if ver, t, ok := system.CheckInstalled(app.Name); ok {
@@ -104,7 +180,7 @@ func Evaluate(installed string, installedType packages.Type, found bool, sysType
 	if installedType != sysType {
 		return Unmanaged
 	}
-	if latest := NormalizeVersion(latestTag); latest != "" && latest != NormalizeVersion(installed) {
+	if latest := NormalizeVersion(latestTag); latest != "" && CompareVersions(latest, NormalizeVersion(installed)) > 0 {
 		return UpdateAvailable
 	}
 	return UpToDate
