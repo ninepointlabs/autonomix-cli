@@ -60,6 +60,7 @@ autonomix-cli check [app...]        # Check tracked apps for updates
 autonomix-cli update [-y] [app...]  # Install available updates (-y: don't ask)
 autonomix-cli install <app>         # Install a tracked app that isn't installed yet
 autonomix-cli remove <app>          # Stop tracking an app (does not uninstall it)
+autonomix-cli about                 # Version, license, support and privacy
 autonomix-cli --version
 ```
 
@@ -105,7 +106,12 @@ install -m755 contrib/omarchy/autonomix.hook ~/.config/omarchy/hooks/post-update
 - **Enter**: Confirm adding a repo.
 - **u**: Check for updates for the selected app.
 - **d**: Delete/Remove an app from the list (stops tracking).
+- **i**: About Autonomix CLI.
 - **q / Ctrl+C**: Quit.
+
+### About
+
+Press **i** in the TUI (it's listed in the help bar), or run `autonomix-cli about`, to see the version, license, Nine Point Labs, the support address [help@ninepointlabs.com](mailto:help@ninepointlabs.com) and what Autonomix CLI does with your data. In the TUI, **l** shows the full license, **e** starts an email with your version details filled in and **c** copies the address (with `wl-copy`, `xclip` or `xsel`).
 
 ## Configuration
 
