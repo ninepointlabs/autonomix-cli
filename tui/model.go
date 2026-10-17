@@ -12,9 +12,11 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ninepointlabs/autonomix-cli/config"
+	"github.com/ninepointlabs/autonomix-cli/pkg/about"
 	"github.com/ninepointlabs/autonomix-cli/pkg/github"
 	"github.com/ninepointlabs/autonomix-cli/pkg/installer"
 	"github.com/ninepointlabs/autonomix-cli/pkg/manager"
@@ -37,6 +39,7 @@ const (
 	viewList state = iota
 	viewAdd
 	viewSelectAsset
+	viewAbout
 )
 
 // Define self repo URL matching main.go to identify it
@@ -80,6 +83,13 @@ type Model struct {
 	// Selection for install
 	assetList list.Model
 	selectedApp *config.App
+
+	// About screen
+	about        about.Info
+	aboutLicense bool // showing the license text
+	aboutNote    string
+	aboutWidth   int
+	licenseView  viewport.Model
 }
 
 // openBrowser opens the specified URL in the default browser of the user.
@@ -100,7 +110,7 @@ func openBrowser(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
-func NewModel(cfg *config.Config) Model {
+func NewModel(cfg *config.Config, info about.Info) Model {
 	items := []list.Item{}
 	for _, app := range cfg.Apps {
 		items = append(items, item{app: app})
@@ -113,8 +123,10 @@ func NewModel(cfg *config.Config) Model {
 			key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "check updates")),
 			key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "install/open")),
+			aboutKey,
 		}
 	}
+	l.AdditionalFullHelpKeys = l.AdditionalShortHelpKeys
 
 	
 	assetsL := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
@@ -133,6 +145,8 @@ func NewModel(cfg *config.Config) Model {
 		state:     viewList,
 		config:    cfg,
 		assetList: assetsL,
+		about:       info,
+		licenseView: viewport.New(80, 20),
 	}
 }
 
@@ -151,6 +165,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.state == viewAbout {
+			return m.updateAbout(msg)
+		}
+
 		if m.state == viewSelectAsset {
 			switch msg.String() {
 			case "enter":
@@ -233,6 +251,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					openBrowser(url)
 					return m, nil
 				}
+			case "i":
+				if m.list.FilterState() != list.Filtering {
+					return m.openAbout(), nil
+				}
 			case "a":
 				m.state = viewAdd
 				m.input.Focus()
@@ -256,6 +278,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.sizeLicenseView(msg.Width, msg.Height)
+
+	case aboutDoneMsg:
+		m.aboutNote = msg.text
 
 	case assetsFetchedMsg:
 		if msg.err != nil && len(msg.assets) == 0 {
@@ -400,6 +426,10 @@ func (m Model) View() string {
 
 	if m.state == viewSelectAsset {
 		return docStyle.Render(m.assetList.View())
+	}
+
+	if m.state == viewAbout {
+		return docStyle.Render(m.aboutView())
 	}
 
 	if m.state == viewAdd {

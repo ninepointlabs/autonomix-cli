@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ninepointlabs/autonomix-cli/config"
+	"github.com/ninepointlabs/autonomix-cli/pkg/about"
 	"github.com/ninepointlabs/autonomix-cli/pkg/installer"
 	"github.com/ninepointlabs/autonomix-cli/pkg/manager"
 	"github.com/ninepointlabs/autonomix-cli/pkg/updater"
@@ -17,6 +19,13 @@ import (
 const SelfRepoURL = "https://github.com/ninepointlabs/autonomix-cli"
 
 var version = "dev" // Set by goreleaser
+
+//go:embed LICENSE
+var licenseText string
+
+func aboutInfo() about.Info {
+	return about.Info{Version: version, LicenseText: licenseText}
+}
 
 const usage = `Usage:
   autonomix-cli                     Open the TUI
@@ -28,6 +37,7 @@ const usage = `Usage:
                                     Install available updates (-y: don't ask)
   autonomix-cli install <app>       Install a tracked app that isn't installed yet
   autonomix-cli remove <app>        Stop tracking an app (does not uninstall it)
+  autonomix-cli about               Show version, license, support and privacy
   autonomix-cli --version           Print version
   autonomix-cli --help              Show this help
 
@@ -52,7 +62,7 @@ func main() {
 			fmt.Printf("Error loading config: %v\n", err)
 			os.Exit(1)
 		}
-		p := tea.NewProgram(tui.NewModel(cfg), tea.WithAltScreen())
+		p := tea.NewProgram(tui.NewModel(cfg, aboutInfo()), tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			fmt.Printf("Alas, there's been an error: %v", err)
 			os.Exit(1)
@@ -86,6 +96,8 @@ func main() {
 		fmt.Print(usage)
 	case "-v", "--version", "version":
 		fmt.Println(version)
+	case "about":
+		fmt.Print(aboutInfo().Text())
 	case "add":
 		if len(args) != 2 {
 			usageExit()
