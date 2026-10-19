@@ -277,6 +277,8 @@ func runUpdate(o opts, queries []string) int {
 	updated := 0
 	reader := bufio.NewReader(os.Stdin)
 	views := make([]appJSON, 0, len(results))
+	var pending []updater.Result
+	var slots []int // index in views of each pending update
 	for _, r := range results {
 		if r.Status == updater.Failed {
 			code = 1
@@ -295,9 +297,15 @@ func runUpdate(o opts, queries []string) int {
 			}
 		}
 
-		v, ok := install(o, cfg, r)
-		views = append(views, v)
-		if !ok {
+		// Filled in below, once every accepted update is installed together.
+		slots = append(slots, len(views))
+		views = append(views, appJSON{})
+		pending = append(pending, r)
+	}
+
+	for i, v := range installAll(o, cfg, pending) {
+		views[slots[i]] = v
+		if !v.Updated {
 			code = 1
 			continue
 		}
@@ -327,34 +335,53 @@ func runInstall(o opts, query string) int {
 		return fail(o, "%s is already installed, use update", r.App.Name)
 	}
 
-	v, ok := install(o, cfg, r)
+	v := installAll(o, cfg, []updater.Result{r})[0]
 	if o.json {
 		if c := printJSON(v); c != 0 {
 			return c
 		}
 	}
-	if !ok {
+	if !v.Updated {
 		return 1
 	}
 	return 0
 }
 
-// install installs the release in r and returns the app's state afterwards.
-func install(o opts, cfg *config.Config, r updater.Result) (appJSON, bool) {
-	logf(o, "Installing %s %s...\n", r.App.Name, r.Release.TagName)
-	if err := updater.Install(cfg, r); err != nil {
-		logf(o, "Failed to install %s: %v\n", r.App.Name, err)
-		v := appView(r)
-		v.Error = err.Error()
-		return v, false
+// installAll installs the releases in results with one elevated command, so
+// the password is asked for once, and returns each app's state afterwards.
+func installAll(o opts, cfg *config.Config, results []updater.Result) []appJSON {
+	if len(results) == 0 {
+		return nil
 	}
+	for _, r := range results {
+		logf(o, "Installing %s %s...\n", r.App.Name, r.Release.TagName)
+	}
+	errs := updater.InstallAll(cfg, results)
 	saveConfig(o, cfg)
 
-	after := updater.Local(cfg)[r.Index]
+	local := updater.Local(cfg)
+	views := make([]appJSON, 0, len(results))
+	for i, r := range results {
+		if errs[i] != nil {
+			logf(o, "Failed to install %s: %v\n", r.App.Name, errs[i])
+		}
+		views = append(views, installedView(r, local[r.Index], errs[i]))
+	}
+	return views
+}
+
+// installedView is the app's state after installing the release in r, where
+// after is the app as found afterwards and err the install error.
+func installedView(r, after updater.Result, err error) appJSON {
+	if err != nil {
+		v := appView(r)
+		v.Error = err.Error()
+		return v
+	}
 	after.Release = r.Release
 	v := appView(after)
 	v.Updated = true
-	return v, true
+	return v
 }
 
 func runRemove(o opts, query string) int {

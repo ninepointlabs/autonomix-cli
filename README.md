@@ -88,7 +88,7 @@ Add `--json` to `add`, `list`, `check`, `update`, `install` or `remove` to get m
 
 `status` is one of `up_to_date`, `update_available`, `not_installed`, `unmanaged` (installed outside the system package manager), `unchecked` (installed, no release fetched yet) or `failed` (with `error`). After `update` or `install`, apps that were installed have `"updated": true`.
 
-When stdin isn't a terminal, packages are installed with `pkexec` instead of `sudo`, so a graphical frontend gets a polkit password dialog.
+When stdin isn't a terminal, packages are installed with `pkexec` instead of `sudo`, so a graphical frontend gets a polkit password dialog. `update` downloads every update first, then installs them all with one command, so the password is asked for once.
 
 Set `GITHUB_TOKEN` (or `GH_TOKEN`) to raise the GitHub API rate limit from 60 to 5000 requests per hour.
 
