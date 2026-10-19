@@ -1,6 +1,10 @@
 package updater
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -250,14 +254,67 @@ func Check(cfg *config.Config, indexes ...int) []Result {
 	return results
 }
 
+// download and installPackages are replaced in tests.
+var (
+	download        = installer.DownloadUpdate
+	installPackages = installer.InstallPackages
+)
+
 // Install downloads and installs the release in r, then records the newly
 // installed version in cfg. The caller is responsible for saving cfg.
 func Install(cfg *config.Config, r Result) error {
-	if err := installer.InstallUpdate(r.Release); err != nil {
-		return err
+	return InstallAll(cfg, []Result{r})[0]
+}
+
+// InstallAll downloads the release in each result, then installs them all
+// with one elevated command so the password is asked for once. It returns an
+// error for each result, nil when it was installed, and records the newly
+// installed versions in cfg. The caller is responsible for saving cfg.
+func InstallAll(cfg *config.Config, results []Result) []error {
+	errs := make([]error, len(results))
+	dir, err := os.MkdirTemp("", "autonomix-")
+	if err != nil {
+		for i := range errs {
+			errs[i] = err
+		}
+		return errs
 	}
-	if ver, _, ok := DetectInstalled(r.App); ok {
-		cfg.Apps[r.Index].Version = ver
+	defer os.RemoveAll(dir)
+
+	var paths []string
+	var staged []int
+	for i, r := range results {
+		// One directory per app, so assets with the same name don't collide.
+		appDir := filepath.Join(dir, strconv.Itoa(i))
+		if err := os.Mkdir(appDir, 0o755); err != nil {
+			errs[i] = err
+			continue
+		}
+		path, err := download(r.Release, appDir)
+		if err != nil {
+			errs[i] = err
+			continue
+		}
+		paths = append(paths, path)
+		staged = append(staged, i)
 	}
-	return nil
+	if len(paths) == 0 {
+		return errs
+	}
+
+	if err := installPackages(paths); err != nil {
+		if len(paths) > 1 {
+			err = fmt.Errorf("installing %d updates together failed: %w", len(paths), err)
+		}
+		for _, i := range staged {
+			errs[i] = err
+		}
+		return errs
+	}
+	for _, i := range staged {
+		if ver, _, ok := DetectInstalled(results[i].App); ok {
+			cfg.Apps[results[i].Index].Version = ver
+		}
+	}
+	return errs
 }

@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -134,11 +136,14 @@ func GetAllAssets(release *github.Release) []github.Asset {
 	return all
 }
 
-// DownloadAsset downloads the specified asset
+// DownloadAsset downloads the specified asset to the system temp directory.
 func DownloadAsset(asset *github.Asset) (string, error) {
-	tempDir := os.TempDir()
-	fileName := asset.Name
-	downloadPath := filepath.Join(tempDir, fileName)
+	return DownloadAssetTo(asset, os.TempDir())
+}
+
+// DownloadAssetTo downloads the specified asset into dir.
+func DownloadAssetTo(asset *github.Asset, dir string) (string, error) {
+	downloadPath := filepath.Join(dir, asset.Name)
 
 	fmt.Fprintf(Log, "Downloading %s...\n", asset.BrowserDownloadURL)
 	if err := downloadFile(downloadPath, asset.BrowserDownloadURL); err != nil {
@@ -148,8 +153,9 @@ func DownloadAsset(asset *github.Asset) (string, error) {
 	return downloadPath, nil
 }
 
-// DownloadUpdate finds and downloads the update, returning the path to the file.
-func DownloadUpdate(release *github.Release) (string, error) {
+// DownloadUpdate finds the update in release and downloads it into dir,
+// returning the path to the file.
+func DownloadUpdate(release *github.Release, dir string) (string, error) {
 	assets, err := GetCompatibleAssets(release)
 	if err != nil {
 		return "", err
@@ -159,7 +165,7 @@ func DownloadUpdate(release *github.Release) (string, error) {
 	}
 	
 	// Default behavior: pick the first one
-	return DownloadAsset(&assets[0])
+	return DownloadAssetTo(&assets[0], dir)
 }
 
 // Escalator returns the command used to run the installer as root: sudo when
@@ -182,48 +188,102 @@ func isTerminal(f *os.File) bool {
 	return err == nil
 }
 
-// GetInstallCmd returns the exec.Cmd to install the package.
+// GetInstallCmd returns the exec.Cmd that installs all the packages in paths
+// with a single elevated command, so the password is asked for once.
 // It does NOT set Stdin/Stdout/Stderr, the caller should do that or use tea.Exec
-func GetInstallCmd(path string) (*exec.Cmd, error) {
-	sysType := system.GetSystemPreferredType()
-	// pkexec runs commands with a minimal environment, so pass an absolute path.
-	absPath, err := filepath.Abs(path)
+func GetInstallCmd(paths ...string) (*exec.Cmd, error) {
+	// pkexec runs commands with a minimal environment, so pass absolute paths.
+	absPaths := make([]string, 0, len(paths))
+	for _, p := range paths {
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return nil, err
+		}
+		absPaths = append(absPaths, abs)
+	}
+	args, err := installArgs(system.GetSystemPreferredType(), absPaths)
 	if err != nil {
 		return nil, err
 	}
-	root := Escalator()
+	return exec.Command(Escalator(), args...), nil
+}
 
+// installArgs returns the command line that installs the packages in paths
+// with the package manager for sysType.
+func installArgs(sysType packages.Type, paths []string) ([]string, error) {
+	var args []string
 	switch sysType {
 	case packages.Deb:
-		return exec.Command(root, "apt-get", "install", "-y", absPath), nil
+		args = []string{"apt-get", "install", "-y"}
 	case packages.Rpm:
-		return exec.Command(root, "rpm", "-Uvh", absPath), nil
+		args = []string{"rpm", "-Uvh"}
 	case packages.Pacman:
-		return exec.Command(root, "pacman", "-U", "--noconfirm", absPath), nil
+		args = []string{"pacman", "-U", "--noconfirm"}
 	default:
 		return nil, fmt.Errorf("unsupported install type: %s", sysType)
 	}
+	return append(args, paths...), nil
 }
 
-func InstallUpdate(release *github.Release) error {
-	path, err := DownloadUpdate(release)
-	if err != nil {
-		return err
+// InstallPackages installs every package in paths with one elevated command.
+func InstallPackages(paths []string) error {
+	if len(paths) == 0 {
+		return nil
 	}
-	defer os.Remove(path)
-
-	cmd, err := GetInstallCmd(path)
+	cmd, err := GetInstallCmd(paths...)
 	if err != nil {
 		return err
 	}
 
-	// Connect to stdout/stderr so user sees password prompt and output
+	// Connect to stdout/stderr so user sees password prompt and output, and
+	// keep stderr to explain a failure.
+	var stderr bytes.Buffer
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = Log
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
 
-	fmt.Fprintf(Log, "Installing %s...\n", path)
-	return cmd.Run()
+	fmt.Fprintf(Log, "Installing %s...\n", strings.Join(paths, " "))
+	return installError(cmd.Args[0], cmd.Run(), stderr.String())
+}
+
+// installError explains err from running the installer through root, the
+// escalator, using the installer's stderr.
+func installError(root string, err error, stderr string) error {
+	if err == nil {
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		code := exitErr.ExitCode()
+		switch {
+		// pkexec exits 126 when the polkit dialog is dismissed and 127 when
+		// authentication fails or isn't allowed.
+		case root == "pkexec" && code == 126:
+			return fmt.Errorf("authentication cancelled")
+		case root == "pkexec" && code == 127:
+			return fmt.Errorf("authentication failed")
+		case root == "sudo" && strings.Contains(stderr, "incorrect password"):
+			return fmt.Errorf("authentication failed")
+		}
+	}
+	if out := lastLines(stderr, 10); out != "" {
+		return fmt.Errorf("%w: %s", err, out)
+	}
+	return err
+}
+
+// lastLines returns the last n non-empty lines of s, joined by newlines.
+func lastLines(s string, n int) string {
+	var lines []string
+	for _, l := range strings.Split(s, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	return strings.Join(lines, "\n")
 }
 
 func findMatchingAsset(assets []github.Asset, sysType packages.Type) (*github.Asset, error) {
