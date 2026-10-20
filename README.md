@@ -1,5 +1,7 @@
 # Autonomix CLI
 
+Website: https://autonomix-cli.ninepointlabs.com
+
 Autonomix CLI is a terminal-based utility written in Go that allows you to easily install and manage applications directly from GitHub Releases.
 
 ## Features
