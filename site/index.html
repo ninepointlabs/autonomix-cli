@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>autonomix-cli: install apps straight from GitHub Releases</title>
+    <meta name="description" content="Autonomix CLI is a terminal utility, written in Go, that installs and manages applications directly from GitHub Releases, and tells you when a new release lands." />
+    <link rel="canonical" href="https://autonomix-cli.ninepointlabs.com/" />
+    <meta property="og:title" content="autonomix-cli: install apps straight from GitHub Releases" />
+    <meta property="og:description" content="A terminal utility, written in Go, that installs and manages applications directly from GitHub Releases, and tells you when a new release lands." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://autonomix-cli.ninepointlabs.com/" />
+    <meta name="theme-color" content="#0c0e11" />
+    <link rel="stylesheet" href="style.css" />
+    <script>window.goatcounter={path:function(p){return location.host+p}}</script>
+    <script data-goatcounter="https://goatcounter-production-af4b.up.railway.app/count" async src="https://goatcounter-production-af4b.up.railway.app/count.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to the content</a>
+
+    <header class="top wrap">
+      <a class="brand" href="./">autonomix-cli</a>
+      <nav aria-label="Site">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#usage">Usage</a>
+        <a href="https://github.com/ninepointlabs/autonomix-cli">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="title">
+        <p class="eyebrow">Terminal · Go · MIT</p>
+        <h1 id="title">Install apps straight from <span class="hl">GitHub Releases</span>.</h1>
+        <p class="lede">Autonomix CLI is a small terminal utility, written in Go, for installing and managing applications directly from GitHub Releases. Point it at a repository, and it finds the right package for your system, notices what’s already installed, and tells you when a new release lands. It’s for Linux users who get their apps from GitHub and would rather not check each project by hand.</p>
+        <div class="actions">
+          <a class="button primary" href="#install">Install</a>
+          <a class="button" href="https://github.com/ninepointlabs/autonomix-cli/releases/latest">Latest release</a>
+          <a class="button" href="https://github.com/ninepointlabs/autonomix-cli">Source on GitHub</a>
+        </div>
+      </section>
+
+      <section class="band wrap" id="features" aria-labelledby="features-title">
+        <h2 id="features-title">What it does</h2>
+        <ul class="features">
+          <li>
+            <h3>Install from GitHub</h3>
+            <p>Add any GitHub repository URL, or just <code>owner/repo</code>, to track it.</p>
+          </li>
+          <li>
+            <h3>Knows the package formats</h3>
+            <p>Recognises <code>.deb</code>, <code>.rpm</code>, <code>.flatpak</code>, <code>.snap</code>, <code>.appimage</code> and Arch packages.</p>
+          </li>
+          <li>
+            <h3>Checks for updates</h3>
+            <p>Looks for new releases on GitHub and installs them. Updating several apps asks for your password once.</p>
+          </li>
+          <li>
+            <h3>Sees what’s installed</h3>
+            <p>Detects whether an app is already on your system (dpkg, rpm, pacman, flatpak, snap) and shows the installed version.</p>
+          </li>
+          <li>
+            <h3>A simple TUI</h3>
+            <p>Run <code>autonomix-cli</code> on its own for a terminal interface built with <a href="https://github.com/charmbracelet/bubbletea">Bubble Tea</a>.</p>
+          </li>
+          <li>
+            <h3>JSON for scripts</h3>
+            <p>Add <code>--json</code> to <code>add</code>, <code>list</code>, <code>check</code>, <code>update</code>, <code>install</code> or <code>remove</code> for machine-readable output, for scripts and graphical frontends.</p>
+          </li>
+          <li>
+            <h3>At home on Omarchy</h3>
+            <p><a href="https://github.com/ninepointlabs/omarchy-autonomix">omarchy-autonomix</a> puts your tracked apps and their updates in the Omarchy bar, and a post-update hook updates them whenever you run <code>omarchy update</code>.</p>
+          </li>
+          <li>
+            <h3>Keeps itself current</h3>
+            <p>Once installed, Autonomix CLI tracks itself, so <code>autonomix-cli update</code> picks up its own new releases too.</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="band wrap" id="install" aria-labelledby="install-title">
+        <h2 id="install-title">Install</h2>
+        <p>Download the package for your system from the <a href="https://github.com/ninepointlabs/autonomix-cli/releases/latest">latest release</a>, then install it.</p>
+        <div class="steps">
+          <div>
+            <h3>Debian and Ubuntu</h3>
+            <pre><code>sudo dpkg -i autonomix-cli_*.deb</code></pre>
+          </div>
+          <div>
+            <h3>Fedora and RHEL</h3>
+            <pre><code>sudo rpm -i autonomix-cli_*.rpm</code></pre>
+          </div>
+          <div>
+            <h3>Arch Linux</h3>
+            <pre><code>sudo pacman -U autonomix-cli_*.pkg.tar.zst</code></pre>
+          </div>
+          <div>
+            <h3>Keeping it updated</h3>
+            <p>Autonomix CLI tracks itself once it’s installed. To add it explicitly:</p>
+            <pre><code>autonomix-cli add https://github.com/ninepointlabs/autonomix-cli</code></pre>
+          </div>
+          <div>
+            <h3>Omarchy post-update hook</h3>
+            <p>To update your Autonomix apps whenever you run <code>omarchy update</code>, install the hook from the repository’s <code>contrib/omarchy</code> folder:</p>
+            <pre><code>install -m755 contrib/omarchy/autonomix.hook ~/.config/omarchy/hooks/post-update.d/autonomix.hook</code></pre>
+          </div>
+          <div>
+            <h3>From source</h3>
+            <pre><code>git clone https://github.com/ninepointlabs/autonomix-cli.git
+cd autonomix-cli
+go build</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="band wrap" id="usage" aria-labelledby="usage-title">
+        <h2 id="usage-title">Usage</h2>
+        <p>Run <code>autonomix-cli</code> for the TUI, or use the commands directly. <code>&lt;app&gt;</code> can be the app name, repo name, <code>owner/repo</code> or the repository URL.</p>
+        <pre><code>autonomix-cli add &lt;url&gt;             # Track a GitHub repository (URL or owner/repo)
+autonomix-cli list                  # List tracked apps and what's installed (no network)
+autonomix-cli check [app...]        # Check tracked apps for updates
+autonomix-cli update [-y] [app...]  # Install available updates (-y: don't ask)
+autonomix-cli install &lt;app&gt;         # Install a tracked app that isn't installed yet
+autonomix-cli remove &lt;app&gt;          # Stop tracking an app (does not uninstall it)
+autonomix-cli about                 # Version, license, support and privacy</code></pre>
+        <p><code>update</code> only touches apps installed through the system package manager (dpkg, rpm, pacman). Set <code>GITHUB_TOKEN</code> (or <code>GH_TOKEN</code>) to raise the GitHub API rate limit from 60 to 5000 requests per hour. More, including the JSON format, is in the <a href="https://github.com/ninepointlabs/autonomix-cli#readme">README</a>.</p>
+      </section>
+    </main>
+
+    <footer class="foot wrap">
+      <p>MIT licensed, see the <a href="https://github.com/ninepointlabs/autonomix-cli/blob/master/LICENSE">license</a>.</p>
+      <ul>
+        <li><a href="https://ninepointlabs.com">Nine Point Labs</a></li>
+        <li><a href="https://blog.ninepointlabs.com">Blog</a></li>
+        <li><a href="https://github.com/ninepointlabs/autonomix-cli">GitHub</a></li>
+      </ul>
+    </footer>
+  </body>
+</html>
