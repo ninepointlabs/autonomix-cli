@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -68,7 +69,7 @@ func Load() (*Config, error) {
 
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not parse %s: %w (fix it or move it aside)", path, err)
 	}
 
 	// Clean up names saved with a version in them by older releases

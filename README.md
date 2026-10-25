@@ -33,12 +33,18 @@ sudo rpm -i autonomix-cli_*.rpm
 sudo pacman -U autonomix-cli_*.pkg.tar.zst
 ```
 
+**Any Linux (tarball):** download `autonomix-cli_Linux_x86_64.tar.gz` (or `_arm64`) and put the `autonomix-cli` binary on your `PATH`:
+```bash
+tar -xzf autonomix-cli_Linux_x86_64.tar.gz autonomix-cli
+install -m755 autonomix-cli ~/.local/bin/
+```
+
 ### Keeping it updated with [autonomix-cli](https://github.com/ninepointlabs/autonomix-cli)
 
-Once installed, Autonomix CLI tracks itself, so `autonomix-cli update` picks up new releases. To add it explicitly:
+Once installed, Autonomix CLI tracks itself automatically (there's no need to `add` it), so `autonomix-cli update` picks up new releases. To track another app, add its repository:
 
 ```bash
-autonomix-cli add https://github.com/ninepointlabs/autonomix-cli
+autonomix-cli add https://github.com/ninepointlabs/repokase
 ```
 
 ### Omarchy bar widget

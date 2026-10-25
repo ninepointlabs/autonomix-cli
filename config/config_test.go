@@ -64,3 +64,24 @@ func TestPackageFieldIsOptional(t *testing.T) {
 		t.Errorf("Package after round trip = %q (err %v), want idea", cfg.Apps[0].Package, err)
 	}
 }
+
+func TestLoadCorruptConfigNamesFile(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	path, err := GetConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"apps": [`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Load()
+	if err == nil {
+		t.Fatal("Load() of a corrupt config returned no error")
+	}
+	if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "unexpected end of JSON input") {
+		t.Errorf("error %q should name %s and the parse problem", err, path)
+	}
+}
