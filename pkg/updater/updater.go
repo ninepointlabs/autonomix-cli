@@ -164,16 +164,48 @@ func versionSegments(v string) []string {
 	return segs
 }
 
-// DetectInstalled looks the app up by its name, then by its repo name.
+// checkInstalled is replaced in tests.
+var checkInstalled = system.CheckInstalled
+
+// DetectInstalled looks the app up by its recorded package name, then by its
+// name, then by its repo name.
 func DetectInstalled(app config.App) (string, packages.Type, bool) {
-	if ver, t, ok := system.CheckInstalled(app.Name); ok {
+	if app.Package != "" {
+		if ver, t, ok := checkInstalled(app.Package); ok {
+			return ver, t, true
+		}
+	}
+	if ver, t, ok := checkInstalled(app.Name); ok {
 		return ver, t, true
 	}
 	parts := strings.Split(strings.TrimSuffix(app.RepoURL, "/"), "/")
 	if repoName := parts[len(parts)-1]; repoName != "" && repoName != app.Name {
-		return system.CheckInstalled(repoName)
+		return checkInstalled(repoName)
 	}
 	return "", packages.Unknown, false
+}
+
+// DetectInstalledFromRelease is DetectInstalled, falling back to the package
+// names of the release's package assets for apps whose package is named
+// differently from the app and the repo (e.g. repo "ideas" ships package
+// "idea"). It returns the package name it found the app by, or "" if it
+// found it without one.
+func DetectInstalledFromRelease(app config.App, rel *github.Release) (ver string, t packages.Type, found bool, pkg string) {
+	if ver, t, found = DetectInstalled(app); found || app.Package != "" || rel == nil {
+		return ver, t, found, ""
+	}
+	tried := map[string]bool{}
+	for _, a := range rel.Assets {
+		name := packages.NameFromFile(a.Name)
+		if name == "" || tried[name] {
+			continue
+		}
+		tried[name] = true
+		if ver, t, ok := checkInstalled(name); ok {
+			return ver, t, true, name
+		}
+	}
+	return "", packages.Unknown, false, ""
 }
 
 // Evaluate decides the status of an app from what is installed and the latest release tag.
@@ -237,11 +269,14 @@ func Check(cfg *config.Config, indexes ...int) []Result {
 		}
 		r.Release = rel
 
-		ver, t, found := DetectInstalled(app)
+		ver, t, found, pkg := DetectInstalledFromRelease(app, rel)
 		r.Installed = ver
 		r.InstalledType = t
 		r.Status = Evaluate(ver, t, found, sysType, rel.TagName)
 
+		if pkg != "" {
+			cfg.Apps[i].Package = pkg
+		}
 		cfg.Apps[i].Latest = rel.TagName
 		cfg.Apps[i].LastChecked = now
 		if r.Status != NotInstalled && r.Status != Unmanaged {
@@ -258,6 +293,7 @@ func Check(cfg *config.Config, indexes ...int) []Result {
 var (
 	download        = installer.DownloadUpdate
 	installPackages = installer.InstallPackages
+	packageName     = packages.NameOfFile
 )
 
 // Install downloads and installs the release in r, then records the newly
@@ -283,6 +319,7 @@ func InstallAll(cfg *config.Config, results []Result) []error {
 
 	var paths []string
 	var staged []int
+	pkgNames := make([]string, len(results))
 	for i, r := range results {
 		// One directory per app, so assets with the same name don't collide.
 		appDir := filepath.Join(dir, strconv.Itoa(i))
@@ -297,6 +334,7 @@ func InstallAll(cfg *config.Config, results []Result) []error {
 		}
 		paths = append(paths, path)
 		staged = append(staged, i)
+		pkgNames[i] = packageName(path)
 	}
 	if len(paths) == 0 {
 		return errs
@@ -312,8 +350,12 @@ func InstallAll(cfg *config.Config, results []Result) []error {
 		return errs
 	}
 	for _, i := range staged {
-		if ver, _, ok := DetectInstalled(results[i].App); ok {
-			cfg.Apps[results[i].Index].Version = ver
+		app := &cfg.Apps[results[i].Index]
+		if pkgNames[i] != "" {
+			app.Package = pkgNames[i]
+		}
+		if ver, _, ok := DetectInstalled(*app); ok {
+			app.Version = ver
 		}
 	}
 	return errs
