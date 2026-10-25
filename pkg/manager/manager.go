@@ -6,7 +6,7 @@ import (
 
 	"github.com/ninepointlabs/autonomix-cli/config"
 	"github.com/ninepointlabs/autonomix-cli/pkg/github"
-	"github.com/ninepointlabs/autonomix-cli/pkg/system"
+	"github.com/ninepointlabs/autonomix-cli/pkg/updater"
 )
 
 // AddResult contains the info about the added app
@@ -66,12 +66,9 @@ func AddApp(cfg *config.Config, repoURL string) (*AddResult, error) {
 	}
 
 	// Check if installed locally
-	if ver, _, installed := system.CheckInstalled(newApp.Name); installed {
+	if ver, _, installed, pkg := updater.DetectInstalledFromRelease(newApp, rel); installed {
 		newApp.Version = ver
-	} else if repoName != "" && repoName != newApp.Name {
-		if ver, _, installed := system.CheckInstalled(repoName); installed {
-			newApp.Version = ver
-		}
+		newApp.Package = pkg
 	}
 
 	cfg.Apps = append(cfg.Apps, newApp)

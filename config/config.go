@@ -26,6 +26,9 @@ type App struct {
 	Version     string `json:"version"` // Installed version
 	Latest      string `json:"latest"`  // Latest version detected
 	LastChecked string `json:"last_checked"`
+	// Package is the name the package manager knows the app by, read from
+	// the installed package, when it differs from Name and the repo name.
+	Package string `json:"package,omitempty"`
 }
 
 type Config struct {

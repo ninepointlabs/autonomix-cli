@@ -1,6 +1,11 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestStripVersion(t *testing.T) {
 	cases := map[string]string{
@@ -18,5 +23,44 @@ func TestStripVersion(t *testing.T) {
 		if got := StripVersion(in); got != want {
 			t.Errorf("StripVersion(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestPackageFieldIsOptional(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	path, err := GetConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A config written before the package field existed.
+	old := `{"apps":[{"name":"ideas","repo_url":"https://github.com/ninepointlabs/ideas","version":"","latest":"v0.1.1","last_checked":""}]}`
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.Apps[0].Package; got != "" {
+		t.Errorf("Package = %q, want empty", got)
+	}
+	if err := Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	if strings.Contains(string(data), `"package"`) {
+		t.Errorf("saved an empty package field:\n%s", data)
+	}
+
+	cfg.Apps[0].Package = "idea"
+	if err := Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err = Load(); err != nil || cfg.Apps[0].Package != "idea" {
+		t.Errorf("Package after round trip = %q (err %v), want idea", cfg.Apps[0].Package, err)
 	}
 }
