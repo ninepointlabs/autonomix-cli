@@ -100,7 +100,7 @@ func main() {
 		fmt.Print(aboutInfo().Text())
 	case "add":
 		if len(args) != 2 {
-			usageExit()
+			os.Exit(argError(o, "add", "one repository URL"))
 		}
 		os.Exit(runAdd(o, args[1]))
 	case "list":
@@ -111,12 +111,12 @@ func main() {
 		os.Exit(runUpdate(o, args[1:]))
 	case "install":
 		if len(args) != 2 {
-			usageExit()
+			os.Exit(argError(o, "install", "one app"))
 		}
 		os.Exit(runInstall(o, args[1]))
 	case "remove":
 		if len(args) != 2 {
-			usageExit()
+			os.Exit(argError(o, "remove", "one app"))
 		}
 		os.Exit(runRemove(o, args[1]))
 	default:
@@ -128,9 +128,9 @@ func main() {
 	}
 }
 
-func usageExit() {
-	fmt.Print(usage)
-	os.Exit(1)
+// argError reports a command given the wrong number of arguments.
+func argError(o opts, cmd, want string) int {
+	return fail(o, "Error: %s needs %s. Run 'autonomix-cli --help' for usage.", cmd, want)
 }
 
 // loadConfig loads the config and ensures autonomix-cli itself is tracked.
