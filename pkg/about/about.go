@@ -24,7 +24,8 @@ const (
 		"api.github.com to look up the latest release of each tracked repository, " +
 		"Autonomix CLI included (when the TUI opens, and when you add, check, update or " +
 		"install an app), and GitHub's release downloads when you install a package. " +
-		"If GITHUB_TOKEN or GH_TOKEN is set, it is sent only to api.github.com and never saved. " +
+		"It uses GITHUB_TOKEN or GH_TOKEN if set, otherwise the token of a logged-in GitHub CLI " +
+		"(gh auth token); the token is sent only to api.github.com and never saved. " +
 		"Your tracked apps are kept in ~/.autonomix/config.json. Downloaded packages go to " +
 		"the system temp directory and are deleted after installing. Installed versions are " +
 		"read from your local package managers. Release pages and the Email action open " +
