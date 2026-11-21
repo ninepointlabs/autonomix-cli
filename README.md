@@ -98,7 +98,7 @@ Add `--json` to `add`, `list`, `check`, `update`, `install` or `remove` to get m
 
 When stdin isn't a terminal, packages are installed with `pkexec` instead of `sudo`, so a graphical frontend gets a polkit password dialog. `update` downloads every update first, then installs them all with one command, so the password is asked for once.
 
-Set `GITHUB_TOKEN` (or `GH_TOKEN`) to raise the GitHub API rate limit from 60 to 5000 requests per hour.
+Unauthenticated, GitHub allows 60 API requests per hour, which runs out quickly with many tracked apps. Autonomix CLI uses `GITHUB_TOKEN` or `GH_TOKEN` if set, otherwise the token from a logged-in [GitHub CLI](https://cli.github.com/) (`gh auth token`), raising the limit to 5000 requests per hour. When the limit is hit, it says so and when it resets.
 
 ### Omarchy
 
